@@ -1,0 +1,8 @@
+prefix=/home/nics/catkin_ws/install
+
+Name: py_control
+Description: Description of py_control
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
