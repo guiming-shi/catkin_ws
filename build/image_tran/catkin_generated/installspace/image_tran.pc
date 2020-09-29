@@ -1,0 +1,8 @@
+prefix=/home/nics/catkin_ws/install
+
+Name: image_tran
+Description: Description of image_tran
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

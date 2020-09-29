@@ -62,3 +62,15 @@
 /home/nics/catkin_ws/build/py_control/CMakeFiles/list_install_components.dir
 /home/nics/catkin_ws/build/py_control/CMakeFiles/geometry_msgs_generate_messages_eus.dir
 /home/nics/catkin_ws/build/py_control/CMakeFiles/roscpp_generate_messages_py.dir
+/home/nics/catkin_ws/build/image_tran/CMakeFiles/install/strip.dir
+/home/nics/catkin_ws/build/image_tran/CMakeFiles/install.dir
+/home/nics/catkin_ws/build/image_tran/CMakeFiles/list_install_components.dir
+/home/nics/catkin_ws/build/image_tran/CMakeFiles/rebuild_cache.dir
+/home/nics/catkin_ws/build/image_tran/CMakeFiles/edit_cache.dir
+/home/nics/catkin_ws/build/image_tran/CMakeFiles/sensor_msgs_generate_messages_eus.dir
+/home/nics/catkin_ws/build/image_tran/CMakeFiles/sensor_msgs_generate_messages_lisp.dir
+/home/nics/catkin_ws/build/image_tran/CMakeFiles/sensor_msgs_generate_messages_nodejs.dir
+/home/nics/catkin_ws/build/image_tran/CMakeFiles/sensor_msgs_generate_messages_cpp.dir
+/home/nics/catkin_ws/build/image_tran/CMakeFiles/sensor_msgs_generate_messages_py.dir
+/home/nics/catkin_ws/build/image_tran/CMakeFiles/install/local.dir
+/home/nics/catkin_ws/build/image_tran/CMakeFiles/test.dir

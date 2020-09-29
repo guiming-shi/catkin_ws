@@ -1,2 +1,2 @@
-py_control
+image_tran:py_control
 -DCATKIN_DEVEL_PREFIX=/home/nics/catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/home/nics/catkin_ws/install -G Unix Makefiles
