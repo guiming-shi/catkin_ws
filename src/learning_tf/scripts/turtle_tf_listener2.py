@@ -8,21 +8,21 @@ import geometry_msgs.msg
 import turtlesim.srv
 
 if __name__ == '__main__':
-	rospy.init_node('turtle_tf_listener')
+	rospy.init_node('turtle_tf_listener2')
 	
 	listener = tf.TransformListener()
 
 	rospy.wait_for_service('spawn')
 	spawner = rospy.ServiceProxy('spawn', turtlesim.srv.Spawn)
-	spawner(4, 2, 0, 'turtle2')
+	spawner(4, 2, 0, 'turtle3')
 
-	turtle_vel = rospy.Publisher('turtle2/cmd_vel', geometry_msgs.msg.Twist,queue_size=1)
+	turtle_vel = rospy.Publisher('turtle3/cmd_vel', geometry_msgs.msg.Twist,queue_size=1)
 
 
 	rate = rospy.Rate(10.0)
 	while not rospy.is_shutdown():
 		try:
-			(trans,rot) = listener.lookupTransform('/turtle2', '/turtle1', rospy.Time(0))
+			(trans,rot) = listener.lookupTransform('/turtle3', '/turtle2', rospy.Time(0))
 		except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
 			continue
 		angular = 4 * math.atan2(trans[1], trans[0])
