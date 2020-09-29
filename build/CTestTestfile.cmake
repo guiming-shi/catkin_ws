@@ -7,3 +7,4 @@
 subdirs("gtest")
 subdirs("py_control")
 subdirs("image_tran")
+subdirs("learning_tf")

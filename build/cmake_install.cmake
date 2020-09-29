@@ -133,6 +133,7 @@ if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   include("/home/nics/catkin_ws/build/gtest/cmake_install.cmake")
   include("/home/nics/catkin_ws/build/py_control/cmake_install.cmake")
   include("/home/nics/catkin_ws/build/image_tran/cmake_install.cmake")
+  include("/home/nics/catkin_ws/build/learning_tf/cmake_install.cmake")
 
 endif()
 
