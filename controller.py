@@ -166,7 +166,7 @@ class ControllerNode:
             # TODO 3: 更新导航信息和飞行状态
             self.navigating_dimension_ = next_nav[0]
             self.navigating_destination_ = next_nav[1]
-            self.flight_state_ = self.flight_state_.NAVIGATING
+            self.flight_state_ = self.FlightState.NAVIGATING
             # end of TODO 3
 
     # 判断是否检测到目标
