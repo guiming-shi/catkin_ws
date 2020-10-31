@@ -36,6 +36,14 @@ class ControllerNode:
 
         self.image_ = None
         self.color_range_ = [(0, 43, 46), (6, 255, 255)] # 红色的HSV范围
+        #######################################################################################
+        self.color_range_y = [(26, 43, 46), (34, 255, 255)] # 黄色的HSV范围
+        self.color_range_b = [(100, 43, 46), (124, 255, 255)] # 蓝色的HSV范围
+        self.target_count = []
+        self.target_count_number = 0
+        self.state = 0
+        self.state_cycle = 0
+        #######################################################################################
         self.bridge_ = CvBridge()
 
         self.flight_state_ = self.FlightState.WAITING
@@ -67,7 +75,7 @@ class ControllerNode:
         if self.flight_state_ == self.FlightState.WAITING:  # 起飞并飞至离墙体（y = 3.0m）适当距离的位置
             rospy.logwarn('State: WAITING')
             self.publishCommand('takeoff')
-            self.navigating_queue_ = deque([['y', 1.8]])
+            self.navigating_queue_ = deque([['y', 2.4]])
             self.next_state_ = self.FlightState.DETECTING_TARGET
             self.switchNavigatingState()
 
@@ -99,45 +107,136 @@ class ControllerNode:
                     self.publishCommand(command+'100')
                 else:
                     self.publishCommand(command+str(int(abs(100*dist))))
-
         elif self.flight_state_ == self.FlightState.DETECTING_TARGET:
             rospy.logwarn('State: DETECTING_TARGET')
-            # 如果无人机飞行高度与标识高度（1.75m）相差太多，则需要进行调整
-            if self.t_wu_[2] > 2.0:
-                self.publishCommand('down %d' % int(100*(self.t_wu_[2] - 1.75)))
-                return
-            elif self.t_wu_[2] < 1.5:
-                self.publishCommand('up %d' % int(-100*(self.t_wu_[2] - 1.75)))
-                return
-            # 如果yaw与90度相差超过正负10度，需要进行旋转调整yaw
-            (yaw, pitch, roll) = self.R_wu_.as_euler('zyx', degrees=True)
-            yaw_diff = yaw - 90 if yaw > -90 else yaw + 270
-            if yaw_diff > 10:  # clockwise
-                self.publishCommand('cw %d' % (int(yaw_diff) if yaw_diff > 15 else 15))
-                return
-            elif yaw_diff < -10:  # counterclockwise
-                self.publishCommand('ccw %d' % (int(-yaw_diff) if yaw_diff < -15 else 15))
-                return
+            if self.state == 1:
+                # 如果无人机飞行高度与标识高度（1.75m）相差太多，则需要进行调整
+                if self.t_wu_[2] > 2.0:
+                    self.publishCommand('down %d' % int(100*(self.t_wu_[2] - 1.75)))
+                    return
+                elif self.t_wu_[2] < 1.5:
+                    self.publishCommand('up %d' % int(-100*(self.t_wu_[2] - 1.75)))
+                    return
 
-            if self.detectTarget():
-                #rospy.loginfo('Target detected.')
-                # 根据无人机当前x坐标判断正确的窗口是哪一个
-                # 实际上可以结合目标在图像中的位置和相机内外参数得到标记点较准确的坐标，这需要相机成像的相关知识
-                # 此处仅仅是做了一个粗糙的估计
-                win_dist = [abs(self.t_wu_[0]-win_x+0.5) for win_x in self.window_x_list_]
-                win_index = win_dist.index(min(win_dist))  # 正确的窗户编号
-                self.navigating_queue_ = deque([['y', 2.4], ['z', 1.0], ['x', self.window_x_list_[win_index]], ['y', 5.0], ['x', 7.0]])  # 通过窗户并导航至终点上方
-                self.next_state_ = self.FlightState.LANDING
-                self.switchNavigatingState()
-            else:
-                if self.t_wu_[0] > 7.5:
-                    rospy.loginfo('Detection failed, ready to land.')
-                    self.flight_state_ = self.FlightState.LANDING
-                else:  # 向右侧平移一段距离，继续检测
-                    self.publishCommand('right 75')
+                # 如果yaw与90度相差超过正负10度，需要进行旋转调整yaw
+                (yaw, pitch, roll) = self.R_wu_.as_euler('zyx', degrees=True)
+                yaw_diff = yaw - 90 if yaw > -90 else yaw + 270
+                if yaw_diff > 10:  # clockwise
+                    self.publishCommand('cw %d' % (int(yaw_diff) if yaw_diff > 15 else 15))
+                    return
+                elif yaw_diff < -10:  # counterclockwise
+                    self.publishCommand('ccw %d' % (int(-yaw_diff) if yaw_diff < -15 else 15))
+                    return
+
+                if self.detectTarget():
+                    #rospy.loginfo('Target detected.')
+                    # 根据无人机当前x坐标判断正确的窗口是哪一个
+                    # 实际上可以结合目标在图像中的位置和相机内外参数得到标记点较准确的坐标，这需要相机成像的相关知识
+                    # 此处仅仅是做了一个粗糙的估计
+                    win_dist = [abs(self.t_wu_[0]-win_x+0.5) for win_x in self.window_x_list_]
+                    win_index = win_dist.index(min(win_dist))  # 正确的窗户编号
+                    self.navigating_queue_ = deque([['y', 2.0], ['z', 1.0], ['x', self.window_x_list_[win_index]], ['y', 4], ['x',  7.0], ['z', 1.5], ['y', 5.7], ['x', 5.0]])  # 通过窗户并导航至3前
+                    self.switchNavigatingState()
+                else:
+                    if self.t_wu_[0] > 7.5:
+                        rospy.loginfo('Detection failed, ready to land.')
+                        self.flight_state_ = self.FlightState.LANDING
+                    else:  # 向右侧平移一段距离，继续检测
+                        self.publishCommand('right 75')
+
+            elif self.state == 2:
+                # 如果yaw与90度相差超过正负10度，需要进行旋转调整yaw
+                (yaw, pitch, roll) = self.R_wu_.as_euler('zyx', degrees=True)
+                yaw_diff = yaw - 90 if yaw > -90 else yaw + 270
+                if yaw_diff > 10:  # clockwise
+                    self.publishCommand('cw %d' % (int(yaw_diff) if yaw_diff > 15 else 15))
+                    return
+                elif yaw_diff < -10:  # counterclockwise
+                    self.publishCommand('ccw %d' % (int(-yaw_diff) if yaw_diff < -15 else 15))
+                    return
+                else:
+                    self.detectTarget()
+                    self.navigating_queue_ = deque([['y', 8.2], ['x', 6], ['y', 11.5]])  # 通过窗户并导航至1前
+                    self.next_state_ = self.FlightState.DETECTING_TARGET
+                    self.switchNavigatingState()
+            
+            elif self.state == 3:
+                if self.state_cycle == 0:
+                    # 如果yaw与270度相差超过正负10度，需要进行旋转调整yaw
+                    (yaw, pitch, roll) = self.R_wu_.as_euler('zyx', degrees=True)
+                    yaw_diff = yaw - 270 if yaw > -270 else yaw + 90
+                    if yaw_diff > 10:  # clockwise
+                        self.publishCommand('cw %d' % (int(yaw_diff) if yaw_diff > 15 else 15))
+                        self.state_cycle = self.state_cycle + 1
+                        return
+                    elif yaw_diff < -10:  # counterclockwise
+                        self.publishCommand('ccw %d' % (int(-yaw_diff) if yaw_diff < -15 else 15))
+                        self.state_cycle = self.state_cycle + 1
+                        return
+                    else:
+                        self.detectTarget()
+                        self.navigating_queue_ = deque([['y', 12.5], ['x', 4.0], ['y', 12.5], ['z', 1.5]])  # 通过窗户并导航至4前
+                        self.next_state_ = self.FlightState.DETECTING_TARGET
+                        self.switchNavigatingState()
+                else:
+                    self.detectTarget()
+                    self.navigating_queue_ = deque([['y', 12.5], ['x', 4.0], ['y', 12.5], ['z', 1.5]])  # 通过窗户并导航至4前
+                    self.next_state_ = self.FlightState.DETECTING_TARGET
+                    self.state_cycle = 0
+                    self.switchNavigatingState()
+
+            elif self.state == 4:
+                if self.state_cycle == 0:
+                    # 如果yaw与270度相差超过正负10度，需要进行旋转调整yaw
+                    (yaw, pitch, roll) = self.R_wu_.as_euler('zyx', degrees=True)
+                    yaw_diff = yaw - 270 if yaw > -270 else yaw + 90
+                    if yaw_diff > 10:  # clockwise
+                        self.publishCommand('cw %d' % (int(yaw_diff) if yaw_diff > 15 else 15))
+                        self.state_cycle = self.state_cycle + 1
+                        return
+                    elif yaw_diff < -10:  # counterclockwise
+                        self.publishCommand('ccw %d' % (int(-yaw_diff) if yaw_diff < -15 else 15))
+                        self.state_cycle = self.state_cycle + 1
+                        return
+                    else:
+                        self.detectTarget()
+                        self.navigating_queue_ = deque([['z', 0.5]])  # 通过窗户并导航至5前
+                        self.next_state_ = self.FlightState.DETECTING_TARGET
+                        self.switchNavigatingState()
+                elif self.state_cycle == 1:
+                    self.detectTarget()
+                    self.navigating_queue_ = deque([['z', 0.5]])  # 通过窗户并导航至5前
+                    self.next_state_ = self.FlightState.DETECTING_TARGET
+                    self.state_cycle = 0
+                    self.switchNavigatingState()
+            elif self.state == 5:
+                if self.state_cycle == 0:
+                    # 如果yaw与45度相差超过正负10度，需要进行旋转调整yaw
+                    (yaw, pitch, roll) = self.R_wu_.as_euler('zyx', degrees=True)
+                    yaw_diff = yaw - 45 if yaw > -45 else yaw + 235
+                    if yaw_diff > 10:  # clockwise
+                        self.publishCommand('cw %d' % (int(yaw_diff) if yaw_diff > 15 else 15))
+                        self.state_cycle = self.state_cycle + 1
+                        return
+                    elif yaw_diff < -10:  # counterclockwise
+                        self.publishCommand('ccw %d' % (int(-yaw_diff) if yaw_diff < -15 else 15))
+                        self.state_cycle = self.state_cycle + 1
+                        return
+                    else:
+                        self.detectTarget()
+                        self.navigating_queue_ = deque([['z', 1.5], ['x', 7.0], ['y', 14.5]])  # 通过窗户并导航至终点
+                        self.next_state_ = self.FlightState.LANDING
+                        self.switchNavigatingState()
+                elif self.state_cycle == 1:
+                    self.detectTarget()
+                    self.navigating_queue_ = deque([['z', 1.5], ['x', 7.0], ['y', 14.5]])  # 通过窗户并导航至终点
+                    self.next_state_ = self.FlightState.LANDING
+                    self.switchNavigatingState()
 
         elif self.flight_state_ == self.FlightState.LANDING:
             rospy.logwarn('State: LANDING')
+            ros_print = ['e','e','e','b','e','e','y','r','e']
+            rospy.logwarn(self.target_count[1]+self.target_count[2]+self.target_count[3]+self.target_count[4]+ros_print[self.target_count_number])
             self.publishCommand('land')
         else:
             pass
@@ -146,6 +245,7 @@ class ControllerNode:
     def switchNavigatingState(self):
         if len(self.navigating_queue_) == 0:
             self.flight_state_ = self.next_state_
+            self.state = self.state + 1
         else: # 从队列头部取出无人机下一次导航的状态信息
             next_nav = self.navigating_queue_.popleft()
             # TODO 3: 更新导航信息和飞行状态
@@ -162,13 +262,18 @@ class ControllerNode:
         height = image_copy.shape[0]
         width = image_copy.shape[1]
 
+
+
         frame = cv2.resize(image_copy, (width, height), interpolation=cv2.INTER_CUBIC)  # 将图片缩放
         frame = cv2.GaussianBlur(frame, (3, 3), 0)  # 高斯模糊
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)  # 将图片转换到HSV空间
         h, s, v = cv2.split(frame)  # 分离出各个HSV通道
         v = cv2.equalizeHist(v)  # 直方图化
         frame = cv2.merge((h, s, v))  # 合并三个通道
-
+         #######################################################################################
+        frame_y = frame
+        frame_b = frame
+         #######################################################################################
         frame = cv2.inRange(frame, self.color_range_[0], self.color_range_[1])  # 对原图像和掩模进行位运算
         opened = cv2.morphologyEx(frame, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))  # 开运算
         closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))  # 闭运算
@@ -188,16 +293,80 @@ class ControllerNode:
             if contour_area_max > 50:
                 isTargetFound = True
 
+        #######################################################################################
+        frame_y = cv2.inRange(frame_y, self.color_range_y[0], self.color_range_y[1])  # 对原图像和掩模进行位运算
+        opened = cv2.morphologyEx(frame_y, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))  # 开运算
+        closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))  # 闭运算
+        (image, contours, hierarchy) = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)  # 找出轮廓
+
+        # 在contours中找出最大轮廓
+        contour_area_max = 0
+        area_max_contour = None
+        for c in contours:  # 遍历所有轮廓
+            contour_area_temp = math.fabs(cv2.contourArea(c))  # 计算轮廓面积
+            if contour_area_temp > contour_area_max:
+                contour_area_max = contour_area_temp
+                area_max_contour = c
+
+        isTargetFound_y = False
+        if area_max_contour is not None:
+            if contour_area_max > 50:
+                isTargetFound_y = True
+        #######################################################################################
+        #######################################################################################
+        frame_b = cv2.inRange(frame_b, self.color_range_b[0], self.color_range_b[1])  # 对原图像和掩模进行位运算
+        opened = cv2.morphologyEx(frame_b, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))  # 开运算
+        closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))  # 闭运算
+        (image, contours, hierarchy) = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)  # 找出轮廓
+
+        # 在contours中找出最大轮廓
+        contour_area_max = 0
+        area_max_contour = None
+        for c in contours:  # 遍历所有轮廓
+            contour_area_temp = math.fabs(cv2.contourArea(c))  # 计算轮廓面积
+            if contour_area_temp > contour_area_max:
+                contour_area_max = contour_area_temp
+                area_max_contour = c
+
+        isTargetFound_b = False
+        if area_max_contour is not None:
+            if contour_area_max > 50:
+                isTargetFound_b = True
+
+
+
+        #######################################################################################
         if isTargetFound:
             target = 'Red'
-            ((centerX, centerY), rad) = cv2.minEnclosingCircle(area_max_contour)  # 获取最小外接圆
-            cv2.circle(image_copy, (int(centerX), int(centerY)), int(rad), (0, 255, 0), 2)  # 画出圆心
+            self.target_count.append('r')
+            if self.state > 1:
+                self.target_count_number = self.target_count_number + 1
+            # ((centerX, centerY), rad) = cv2.minEnclosingCircle(area_max_contour)  # 获取最小外接圆
+            # cv2.circle(image_copy, (int(centerX), int(centerY)), int(rad), (0, 255, 0), 2)  # 画出圆心
+        #######################################################################################
+        elif isTargetFound_y:
+            target = 'yellow'
+            self.target_count.append('y')
+            if self.state > 1:
+                self.target_count_number = self.target_count_number + 2
+            # ((centerX, centerY), rad) = cv2.minEnclosingCircle(area_max_contour)  # 获取最小外接圆
+            # cv2.circle(image_copy, (int(centerX), int(centerY)), int(rad), (0, 255, 0), 2)  # 画出圆心
+        #######################################################################################
+        elif isTargetFound_b:
+            target = 'blue'
+            self.target_count.append('b')
+            if self.state > 1:
+                self.target_count_number = self.target_count_number + 5
+            # ((centerX, centerY), rad) = cv2.minEnclosingCircle(area_max_contour)  # 获取最小外接圆
+            # cv2.circle(image_copy, (int(centerX), int(centerY)), int(rad), (0, 255, 0), 2)  # 画出圆心
+        #######################################################################################
         else:
             target = 'None'
+            self.target_count.append('e')
             pass
 
         self.image_result_pub_.publish(self.bridge_.cv2_to_imgmsg(image_copy))
-        return isTargetFound
+        return isTargetFound|isTargetFound_y|isTargetFound_b
 
     # 向相关topic发布tello命令
     def publishCommand(self, command_str):
