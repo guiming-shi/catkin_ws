@@ -290,7 +290,7 @@ class ControllerNode:
 
         isTargetFound = False
         if area_max_contour is not None:
-            if contour_area_max > 50:
+            if contour_area_max > 10:
                 isTargetFound = True
 
         #######################################################################################
@@ -310,7 +310,7 @@ class ControllerNode:
 
         isTargetFound_y = False
         if area_max_contour is not None:
-            if contour_area_max > 50:
+            if contour_area_max > 10:
                 isTargetFound_y = True
         #######################################################################################
         #######################################################################################
@@ -330,7 +330,7 @@ class ControllerNode:
 
         isTargetFound_b = False
         if area_max_contour is not None:
-            if contour_area_max > 50:
+            if contour_area_max > 10:
                 isTargetFound_b = True
 
 
