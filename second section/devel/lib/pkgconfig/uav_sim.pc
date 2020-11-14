@@ -1,0 +1,8 @@
+prefix=/home/thudrone/catkin_sim/devel
+
+Name: uav_sim
+Description: Description of uav_sim
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

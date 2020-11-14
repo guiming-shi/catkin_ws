@@ -1,0 +1,2 @@
+catkin_simple:eigen_catkin:uav_sim
+-DCATKIN_DEVEL_PREFIX=/home/thudrone/catkin_sim/devel -DCMAKE_INSTALL_PREFIX=/home/thudrone/catkin_sim/install -G Unix Makefiles
